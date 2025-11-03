@@ -1,0 +1,137 @@
+"use client";
+
+import * as React from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle2, XCircle, RefreshCw, ExternalLink, Copy, Check } from "lucide-react";
+import { toast } from "sonner";
+
+interface IdentityOverviewProps {
+  address: string;
+  verified: boolean;
+  creditScore: number;
+  metadataURI: string;
+  onRefresh: () => void;
+  isRefreshing: boolean;
+}
+
+export function IdentityOverview({
+  address,
+  verified,
+  creditScore,
+  metadataURI,
+  onRefresh,
+  isRefreshing,
+}: IdentityOverviewProps) {
+  const [copied, setCopied] = React.useState(false);
+
+  const copyAddress = () => {
+    navigator.clipboard.writeText(address);
+    setCopied(true);
+    toast.success("Address copied to clipboard");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const ipfsHash = metadataURI.replace("ipfs://", "");
+  const ipfsGatewayUrl = `https://ipfs.io/ipfs/${ipfsHash}`;
+
+  return (
+    <Card className="border shadow-sm">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-2xl">Identity Overview</CardTitle>
+            <CardDescription className="text-base">Your on-chain identity credentials</CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            {verified ? (
+              <Badge className="bg-success hover:bg-success/90 text-success-foreground gap-1.5 px-3 py-1">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Verified
+              </Badge>
+            ) : (
+              <Badge variant="destructive" className="gap-1.5 px-3 py-1">
+                <XCircle className="w-3.5 h-3.5" />
+                Not Verified
+              </Badge>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-8">
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-muted-foreground">Wallet Address</p>
+            <div className="flex items-center gap-2">
+              <code className="text-sm bg-muted px-4 py-2.5 rounded-lg flex-1 truncate font-mono">
+                {address}
+              </code>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={copyAddress}
+                className="shrink-0 h-10 w-10 rounded-lg"
+              >
+                {copied ? (
+                  <Check className="h-4 w-4 text-success" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-muted-foreground">Credit Score</p>
+            <div className="flex items-center gap-4">
+              <div className="text-4xl font-bold text-primary">
+                {creditScore}
+              </div>
+              <Badge variant="outline" className="text-sm px-3 py-1">
+                {creditScore > 700 ? "Excellent" : creditScore > 600 ? "Good" : "Fair"}
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-muted-foreground">Metadata URI</p>
+          <div className="flex items-center gap-2">
+            <code className="text-sm bg-muted px-4 py-2.5 rounded-lg flex-1 truncate font-mono">
+              {metadataURI}
+            </code>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => window.open(ipfsGatewayUrl, "_blank")}
+              className="shrink-0 h-10 w-10 rounded-lg"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex gap-3 pt-2">
+          <Button
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            className="px-6 h-11 bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            {isRefreshing ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Refreshing...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Refresh Verification
+              </>
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
