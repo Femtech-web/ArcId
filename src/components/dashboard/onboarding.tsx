@@ -160,7 +160,7 @@ export function Onboarding({ address, onMint, isMinting }: OnboardingProps) {
                     <Button
                       type="button"
                       onClick={open}
-                      disabled={isVerifying || isMinting}
+                      disabled={isVerifying || isMinting || !email || !country}
                       className="w-full bg-[#1A1A1A] hover:bg-[#333] text-sm sm:text-base h-11 sm:h-12"
                     >
                       {isVerifying ? "Verifying..." : "Verify with World ID"}

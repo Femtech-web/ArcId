@@ -1,5 +1,5 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
-import { Chain, mainnet, sepolia } from 'wagmi/chains';
+import { Chain, mainnet, sepolia, arcTestnet } from 'wagmi/chains';
 
 export const anvil: Chain = {
   id: 31337,
@@ -22,6 +22,6 @@ export const anvil: Chain = {
 export const config = getDefaultConfig({
   appName: 'ArcID Dashboard',
   projectId: 'YOUR_PROJECT_ID',
-  chains: [mainnet, sepolia, anvil],
+  chains: [mainnet, sepolia, arcTestnet, anvil],
   ssr: true,
 });
