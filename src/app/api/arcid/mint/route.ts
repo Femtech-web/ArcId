@@ -1,39 +1,105 @@
 import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
+import { uploadMetadataToStoracha } from "@/lib/storachaUploader";
+import { buildDataHash } from "@/lib/utils";
+import { ArcIDService } from "@/lib/arcidService";
+
+function requireApiKey(request: NextRequest): NextResponse | null {
+  const header = request.headers.get("x-api-key");
+  if (!header || header !== process.env.API_KEY) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  return null;
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { address, email, country } = body;
+    const authError = requireApiKey(request);
+    if (authError) return authError;
 
-    if (!address || !email || !country) {
+    const { userAddress, userData, proof, salt } = await request.json();
+
+    if (!userAddress || !userData || !proof) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "userAddress, userData, and proof are required" },
         { status: 400 }
       );
     }
 
-    // Simulate minting delay
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const appId = process.env.WORLDCOIN_APP_ID;
+    const actionId = process.env.WORLDCOIN_ACTION_ID;
 
-    // Mock IPFS hash
-    const mockIPFSHash = `Qm${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+    const svc = new ArcIDService(process.env.RPC_URL!,
+      process.env.VERIFIER_PRIVATE_KEY!,
+      process.env.ARCID_CONTRACT_ADDRESS!);
+
+    const creditScore = svc.deriveCreditScore(userData, proof);
+
+    const metadata = {
+      name: "ArcID Credential",
+      description:
+        "Worldcoin-verified decentralized identity for Arc Network",
+      verifier: "Worldcoin",
+      userData: {
+        country: userData.country,
+        email: userData.email,
+      },
+      worldcoin: {
+        verified: true,
+        appId,
+        actionId,
+        timestamp: new Date().toISOString(),
+        nullifier_hash: proof.nullifier_hash,
+      },
+      timestamp: Date.now(),
+    };
+
+    const metadataURI = await uploadMetadataToStoracha(metadata);
+
+    const dataHash = buildDataHash(metadataURI, salt || "");
+
+    const result = await svc.mintIdentity({
+      to: userAddress,
+      dataHash,
+      metadataURI,
+      creditScore,
+    });
+
+    const { error: dbError } = await supabase.from("arcid_identities").upsert({
+      address: userAddress.toLowerCase(),
+      email: userData.email,
+      country: userData.country,
+      provider: "Worldcoin",
+      metadata_uri: metadataURI,
+      data_hash: dataHash,
+      credit_score: creditScore,
+      verified: true,
+      issued_at: new Date().toISOString(),
+    });
+
+    await supabase.from("arcid_verifications").insert({
+      address: userAddress.toLowerCase(),
+      provider: "Worldcoin",
+      status: "completed",
+      type: "mint",
+    });
+
+    if (dbError) {
+      console.error("Supabase insert error:", dbError);
+    }
 
     return NextResponse.json({
       success: true,
-      address,
-      metadataURI: `ipfs://${mockIPFSHash}`,
-      metadata: {
-        email,
-        country,
-        issuedAt: new Date().toISOString(),
-        kycProvider: "ArcID KYC Service",
-        verified: true,
-      },
-      transactionHash: `0x${Math.random().toString(16).substring(2, 66)}`,
+      metadataURI,
+      dataHash,
+      creditScore,
+      metadata,
+      result,
     });
-  } catch (error) {
+  } catch (err: any) {
+    console.error("mint error", err);
     return NextResponse.json(
-      { error: "Failed to mint ArcID" },
+      { error: err.message || "mint failed" },
       { status: 500 }
     );
   }

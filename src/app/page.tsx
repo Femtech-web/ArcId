@@ -10,169 +10,34 @@ import { ConnectedDApps } from "@/components/dashboard/connected-dapps";
 import { Onboarding } from "@/components/dashboard/onboarding";
 import { Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "sonner";
-
-interface IdentityData {
-  verified: boolean;
-  creditScore: number;
-  metadataURI: string;
-  metadata: {
-    email: string;
-    country: string;
-    issuedAt: string;
-    kycProvider: string;
-  };
-}
-
-type DashboardState = "loading" | "unverified" | "verified" | "pending";
+import { useArcID } from "@/hooks/useArcID";
+import { ConnectWithArcID } from "@/components/dashboard/connect-button";
 
 export default function Home() {
   const { address, isConnected } = useAccount();
-  const [state, setState] = React.useState<DashboardState>("loading");
-  const [identityData, setIdentityData] = React.useState<IdentityData | null>(null);
-  const [isMinting, setIsMinting] = React.useState(false);
-  const [isRefreshing, setIsRefreshing] = React.useState(false);
-
-  // Fetch identity data when wallet connects
-  React.useEffect(() => {
-    if (!address) {
-      setState("loading");
-      return;
-    }
-
-    fetchIdentityData(address);
-  }, [address]);
-
-  const fetchIdentityData = async (userAddress: string) => {
-    setState("loading");
-    
-    try {
-      // Fetch verification status and credit score in parallel
-      const [verifiedRes, creditRes] = await Promise.all([
-        fetch(`/api/arcid/isVerified/${userAddress}`),
-        fetch(`/api/arcid/creditScore/${userAddress}`),
-      ]);
-
-      const verifiedData = await verifiedRes.json();
-      const creditData = await creditRes.json();
-
-      if (verifiedData.verified) {
-        // User has an identity, load full data
-        setIdentityData({
-          verified: true,
-          creditScore: creditData.creditScore,
-          metadataURI: "ipfs://QmX4fG7h9kJnBvZ8YtR3mP2sL6wQ1eN5cA7dV9xK",
-          metadata: {
-            email: "user@example.com",
-            country: "United States",
-            issuedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-            kycProvider: "ArcID KYC Service",
-          },
-        });
-        setState("verified");
-      } else {
-        // User needs to mint identity
-        setState("unverified");
-      }
-    } catch (error) {
-      console.error("Error fetching identity data:", error);
-      toast.error("Failed to load identity data");
-      setState("unverified");
-    }
-  };
-
-  const handleMint = async (email: string, country: string) => {
-    if (!address) return;
-
-    setIsMinting(true);
-    setState("pending");
-
-    try {
-      const response = await fetch("/api/arcid/mint", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          address,
-          email,
-          country,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        toast.success("🎉 ArcID minted successfully!");
-        
-        // Update identity data with minted info
-        setIdentityData({
-          verified: true,
-          creditScore: 650, // Starting credit score
-          metadataURI: data.metadataURI,
-          metadata: data.metadata,
-        });
-
-        setState("verified");
-      } else {
-        throw new Error(data.error || "Failed to mint ArcID");
-      }
-    } catch (error) {
-      console.error("Error minting ArcID:", error);
-      toast.error("Failed to mint ArcID. Please try again.");
-      setState("unverified");
-    } finally {
-      setIsMinting(false);
-    }
-  };
-
-  const handleRefresh = async () => {
-    if (!address) return;
-
-    setIsRefreshing(true);
-
-    try {
-      const response = await fetch("/api/arcid/update", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          address,
-          reverify: true,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        toast.success("✅ Verification refreshed successfully!");
-        await fetchIdentityData(address);
-      } else {
-        throw new Error(data.error || "Failed to refresh verification");
-      }
-    } catch (error) {
-      console.error("Error refreshing verification:", error);
-      toast.error("Failed to refresh verification");
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
+  const {
+    state,
+    identityData,
+    isMinting,
+    isRefreshing,
+    handleMint,
+    handleRefresh,
+  } = useArcID(address);
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
 
-      <main className="container mx-auto px-6 py-12 max-w-7xl">
+      <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 max-w-7xl">
         {!isConnected ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center min-h-[70vh] text-center space-y-8"
+            className="flex flex-col items-center justify-center min-h-[70vh] text-center space-y-6 sm:space-y-8 px-4"
           >
-            <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-[#B6509E] to-primary flex items-center justify-center shadow-lg">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gradient-to-br from-[#B6509E] to-primary flex items-center justify-center shadow-lg">
               <svg
-                className="w-10 h-10 text-white"
+                className="w-8 h-8 sm:w-10 sm:h-10 text-white"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -185,12 +50,13 @@ export default function Home() {
                 />
               </svg>
             </div>
-            <div className="space-y-4 max-w-2xl">
-              <h1 className="text-5xl font-bold text-foreground">
+            <div className="space-y-3 sm:space-y-4 max-w-md sm:max-w-2xl">
+              <h1 className="text-3xl sm:text-5xl font-bold text-foreground">
                 Welcome to ArcID
               </h1>
-              <p className="text-xl text-muted-foreground">
-                Connect your wallet to access your decentralized identity dashboard
+              <p className="text-base sm:text-xl text-muted-foreground leading-relaxed">
+                Connect your wallet to access your decentralized identity
+                dashboard
               </p>
             </div>
           </motion.div>
@@ -202,10 +68,12 @@ export default function Home() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center min-h-[70vh] space-y-6"
+                className="flex flex-col items-center justify-center min-h-[70vh] space-y-4 sm:space-y-6 text-center"
               >
-                <Loader2 className="w-12 h-12 animate-spin text-primary" />
-                <p className="text-lg text-muted-foreground">Loading your identity...</p>
+                <Loader2 className="w-10 h-10 sm:w-12 sm:h-12 animate-spin text-primary" />
+                <p className="text-base sm:text-lg text-muted-foreground">
+                  Loading your identity...
+                </p>
               </motion.div>
             )}
 
@@ -220,7 +88,7 @@ export default function Home() {
                 <Onboarding
                   address={address || ""}
                   onMint={handleMint}
-                  isMinting={false}
+                  isMinting={isMinting}
                 />
               </motion.div>
             )}
@@ -231,15 +99,17 @@ export default function Home() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center min-h-[70vh] space-y-8"
+                className="flex flex-col items-center justify-center min-h-[70vh] space-y-6 sm:space-y-8 text-center px-4"
               >
                 <div className="relative">
-                  <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-[#B6509E] to-primary animate-pulse shadow-2xl" />
-                  <Loader2 className="absolute inset-0 m-auto w-12 h-12 text-white animate-spin" />
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-gradient-to-br from-[#B6509E] to-primary animate-pulse shadow-2xl" />
+                  <Loader2 className="absolute inset-0 m-auto w-10 h-10 sm:w-12 sm:h-12 text-white animate-spin" />
                 </div>
-                <div className="text-center space-y-3">
-                  <h2 className="text-3xl font-bold">Verifying Identity...</h2>
-                  <p className="text-muted-foreground text-lg">
+                <div className="space-y-2 sm:space-y-3">
+                  <h2 className="text-2xl sm:text-3xl font-bold">
+                    Verifying Identity...
+                  </h2>
+                  <p className="text-sm sm:text-lg text-muted-foreground">
                     Your identity is being verified on-chain
                   </p>
                 </div>
@@ -253,11 +123,15 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.4 }}
-                className="space-y-8"
+                className="space-y-6 sm:space-y-8"
               >
-                <div>
-                  <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
-                  <p className="text-muted-foreground text-lg">Manage your decentralized identity</p>
+                <div className="px-2 sm:px-0">
+                  <h1 className="text-3xl sm:text-4xl font-bold mb-1 sm:mb-2">
+                    Dashboard
+                  </h1>
+                  <p className="text-base sm:text-lg text-muted-foreground">
+                    Manage your decentralized identity
+                  </p>
                 </div>
 
                 <IdentityOverview
@@ -269,15 +143,16 @@ export default function Home() {
                   isRefreshing={isRefreshing}
                 />
 
-                <div className="grid gap-8 lg:grid-cols-2">
+                <div className="grid gap-6 sm:gap-8 grid-cols-1 lg:grid-cols-2">
                   <CredentialsSection
                     metadata={identityData.metadata}
                     metadataURI={identityData.metadataURI}
                   />
-                  <VerificationHistory />
+                  <VerificationHistory address={address as string} />
                 </div>
+                <ConnectWithArcID />
 
-                <ConnectedDApps />
+                <ConnectedDApps address={address as string} />
               </motion.div>
             )}
           </AnimatePresence>

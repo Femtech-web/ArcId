@@ -1,79 +1,115 @@
 "use client";
 
 import * as React from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useEffect, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Clock } from "lucide-react";
+import { getVerificationHistory } from "@/lib/api";
 
 interface VerificationEvent {
   id: string;
-  date: string;
+  verified_at: string;
   provider: string;
   status: "completed" | "pending";
+  type: "mint" | "update" | "reverify";
 }
 
-export function VerificationHistory() {
-  const events: VerificationEvent[] = [
-    {
-      id: "1",
-      date: new Date().toISOString(),
-      provider: "ArcID KYC Service",
-      status: "completed",
-    },
-    {
-      id: "2",
-      date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      provider: "Identity Verification Gateway",
-      status: "completed",
-    },
-    {
-      id: "3",
-      date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-      provider: "ArcID KYC Service",
-      status: "completed",
-    },
-  ];
+export function VerificationHistory({ address }: { address: string }) {
+  const [events, setEvents] = useState<VerificationEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!address) return;
+    (async () => {
+      try {
+        const data = await getVerificationHistory(address);
+        setEvents(data);
+      } catch (err) {
+        console.error("Failed to load history:", err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [address]);
+
+  if (loading)
+    return (
+      <p className="text-muted-foreground text-center text-sm sm:text-base py-6">
+        Loading verification history...
+      </p>
+    );
+
+  if (!events.length)
+    return (
+      <p className="text-muted-foreground text-center text-sm sm:text-base py-6">
+        No verifications yet.
+      </p>
+    );
 
   return (
-    <Card className="border shadow-sm">
-      <CardHeader>
-        <CardTitle className="text-2xl">Verification History</CardTitle>
-        <CardDescription className="text-base">Timeline of your identity verifications</CardDescription>
+    <Card className="border shadow-sm w-full">
+      <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
+        <CardTitle className="text-xl sm:text-2xl font-bold">
+          Verification History
+        </CardTitle>
+        <CardDescription className="text-sm sm:text-base">
+          Timeline of your identity verifications
+        </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {events.map((event, index) => (
+
+      <CardContent className="px-4 sm:px-6 pb-6">
+        <div className="space-y-3 sm:space-y-4">
+          {events.map((event) => (
             <div
               key={event.id}
-              className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+              className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
             >
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 self-start sm:self-auto">
                 {event.status === "completed" ? (
-                  <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
-                    <CheckCircle2 className="w-5 h-5 text-success" />
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-success/10 flex items-center justify-center">
+                    <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-success" />
                   </div>
                 ) : (
-                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-muted-foreground" />
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-muted flex items-center justify-center">
+                    <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
                   </div>
                 )}
               </div>
-              <div className="flex-1 space-y-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-base font-semibold">{event.provider}</p>
+
+              <div className="flex-1 space-y-1 sm:space-y-1.5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
+                  <p className="text-sm sm:text-base font-semibold break-words">
+                    {event.provider}
+                    {event.type && (
+                      <span className="text-muted-foreground text-xs sm:text-sm ml-1 sm:ml-2">
+                        ({event.type})
+                      </span>
+                    )}
+                  </p>
+
                   <Badge
-                    variant={event.status === "completed" ? "default" : "secondary"}
-                    className={
+                    variant={
+                      event.status === "completed" ? "default" : "secondary"
+                    }
+                    className={`text-xs sm:text-sm ${
                       event.status === "completed"
                         ? "bg-success hover:bg-success/90 text-success-foreground"
                         : ""
-                    }
+                    }`}
                   >
                     {event.status}
                   </Badge>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  {new Date(event.date).toLocaleDateString("en-US", {
+
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  {new Date(event.verified_at).toLocaleDateString("en-US", {
                     year: "numeric",
                     month: "short",
                     day: "numeric",
