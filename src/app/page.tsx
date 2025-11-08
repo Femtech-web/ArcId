@@ -23,23 +23,6 @@ export default function Home() {
     handleRefresh,
   } = useArcID(address);
 
-  // if (state === "loading") {
-  //   return (
-  //     <motion.div
-  //       key="loading"
-  //       initial={{ opacity: 0 }}
-  //       animate={{ opacity: 1 }}
-  //       exit={{ opacity: 0 }}
-  //       className="flex flex-col items-center justify-center min-h-[70vh] space-y-4 sm:space-y-6 text-center"
-  //     >
-  //       <Loader2 className="w-10 h-10 sm:w-12 sm:h-12 animate-spin text-primary" />
-  //       <p className="text-base sm:text-lg text-muted-foreground">
-  //         Loading your identity...
-  //       </p>
-  //     </motion.div>
-  //   );
-  // }
-
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -51,47 +34,30 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center justify-center min-h-[70vh] text-center space-y-6 sm:space-y-8 px-4"
           >
-            {state !== "loading" ? (
-              <>
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gradient-to-br from-[#B6509E] to-primary flex items-center justify-center shadow-lg">
-                  <svg
-                    className="w-8 h-8 sm:w-10 sm:h-10 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                    />
-                  </svg>
-                </div>
-                <div className="space-y-3 sm:space-y-4 max-w-md sm:max-w-2xl">
-                  <h1 className="text-3xl sm:text-5xl font-bold text-foreground">
-                    Welcome to ArcID
-                  </h1>
-                  <p className="text-base sm:text-xl text-muted-foreground leading-relaxed">
-                    Connect your wallet to access your decentralized identity
-                    dashboard
-                  </p>
-                </div>
-              </>
-            ) : (
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center min-h-[70vh] space-y-4 sm:space-y-6 text-center"
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gradient-to-br from-[#B6509E] to-primary flex items-center justify-center shadow-lg">
+              <svg
+                className="w-8 h-8 sm:w-10 sm:h-10 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                <Loader2 className="w-10 h-10 sm:w-12 sm:h-12 animate-spin text-primary" />
-                <p className="text-base sm:text-lg text-muted-foreground">
-                  Loading your identity...
-                </p>
-              </motion.div>
-            )}
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                />
+              </svg>
+            </div>
+            <div className="space-y-3 sm:space-y-4 max-w-md sm:max-w-2xl">
+              <h1 className="text-3xl sm:text-5xl font-bold text-foreground">
+                Welcome to ArcID
+              </h1>
+              <p className="text-base sm:text-xl text-muted-foreground leading-relaxed">
+                Connect your wallet to access your decentralized identity
+                dashboard
+              </p>
+            </div>
           </motion.div>
         ) : (
           <AnimatePresence mode="wait">
