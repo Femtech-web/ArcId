@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useArcID } from "@/hooks/useArcID";
 
 export default function Home() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chainId } = useAccount();
   const {
     state,
     identityData,
@@ -78,21 +78,49 @@ export default function Home() {
           </motion.div>
         ) : (
           <AnimatePresence mode="wait">
-            {state === "unverified" && !isMinting && (
+            {chainId !== Number(process.env.NEXT_PUBLIC_ANVIL_CHAINID) && (
               <motion.div
-                key="unverified"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
+                key="wrong-network"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
+                className="flex flex-col items-center justify-center min-h-[70vh] px-4 text-center"
               >
-                <Onboarding
-                  address={address || ""}
-                  onMint={handleMint}
-                  isMinting={isMinting}
-                />
+                <div className="p-6 sm:p-8 rounded-2xl border border-border bg-card/60 backdrop-blur-md shadow-md max-w-sm mx-auto space-y-4">
+                  <h2 className="text-lg sm:text-xl font-semibold">
+                    Wrong Network Detected
+                  </h2>
+
+                  <p className="text-sm sm:text-base text-muted-foreground">
+                    You’re currently connected to a different network. Please
+                    switch to{" "}
+                    <span className="font-medium text-foreground">
+                      Anvil Testnet
+                    </span>{" "}
+                    from the network dropdown above to continue.
+                  </p>
+                </div>
               </motion.div>
             )}
+
+            {state === "unverified" &&
+              !isMinting &&
+              chainId === Number(process.env.NEXT_PUBLIC_ANVIL_CHAINID) && (
+                <motion.div
+                  key="unverified"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Onboarding
+                    address={address || ""}
+                    onMint={handleMint}
+                    isMinting={isMinting}
+                  />
+                </motion.div>
+              )}
 
             {(state === "pending" || isMinting) && (
               <motion.div
@@ -117,43 +145,45 @@ export default function Home() {
               </motion.div>
             )}
 
-            {state === "verified" && identityData && (
-              <motion.div
-                key="verified"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.4 }}
-                className="space-y-6 sm:space-y-8"
-              >
-                <div className="px-2 sm:px-0">
-                  <h1 className="text-3xl sm:text-4xl font-bold mb-1 sm:mb-2">
-                    Dashboard
-                  </h1>
-                  <p className="text-base sm:text-lg text-muted-foreground">
-                    Manage your decentralized identity
-                  </p>
-                </div>
+            {state === "verified" &&
+              identityData &&
+              chainId === Number(process.env.NEXT_PUBLIC_ANVIL_CHAINID) && (
+                <motion.div
+                  key="verified"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.4 }}
+                  className="space-y-6 sm:space-y-8"
+                >
+                  <div className="px-2 sm:px-0">
+                    <h1 className="text-3xl sm:text-4xl font-bold mb-1 sm:mb-2">
+                      Dashboard
+                    </h1>
+                    <p className="text-base sm:text-lg text-muted-foreground">
+                      Manage your decentralized identity
+                    </p>
+                  </div>
 
-                <IdentityOverview
-                  address={address || ""}
-                  verified={identityData.verified}
-                  creditScore={identityData.creditScore}
-                  metadataURI={identityData.metadataURI}
-                  onRefresh={handleRefresh}
-                  isRefreshing={isRefreshing}
-                />
-
-                <div className="grid gap-6 sm:gap-8 grid-cols-1 lg:grid-cols-2">
-                  <CredentialsSection
-                    metadata={identityData.metadata}
+                  <IdentityOverview
+                    address={address || ""}
+                    verified={identityData.verified}
+                    creditScore={identityData.creditScore}
                     metadataURI={identityData.metadataURI}
+                    onRefresh={handleRefresh}
+                    isRefreshing={isRefreshing}
                   />
-                  <VerificationHistory address={address as string} />
-                </div>
-                <ConnectedDApps address={address as string} />
-              </motion.div>
-            )}
+
+                  <div className="grid gap-6 sm:gap-8 grid-cols-1 lg:grid-cols-2">
+                    <CredentialsSection
+                      metadata={identityData.metadata}
+                      metadataURI={identityData.metadataURI}
+                    />
+                    <VerificationHistory address={address as string} />
+                  </div>
+                  <ConnectedDApps address={address as string} />
+                </motion.div>
+              )}
           </AnimatePresence>
         )}
       </main>
