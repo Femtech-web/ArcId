@@ -8,6 +8,7 @@ import {
   updateArcID,
 } from "@/lib/api";
 import { useArcIDContract } from "@/hooks/useArcIDContract";
+import { useAccount } from "wagmi";
 
 interface IdentityData {
   verified: boolean;
@@ -28,6 +29,7 @@ export function useArcID(address?: string) {
   const [identityData, setIdentityData] = useState<IdentityData | null>(null);
   const [isMinting, setIsMinting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const { chainId } = useAccount();
 
   const {
     getIdentityDataOnChain,
@@ -43,14 +45,14 @@ export function useArcID(address?: string) {
         getOffchainIdentity(userAddress),
       ]);
 
-      if (!identity?.verified) {
+      if (!identity?.verified && chainId !== Number(process.env.NEXT_PUBLIC_ANVIL_CHAINID)) {
         setState("unverified");
         return;
       }
 
       const mergedData: IdentityData = {
         verified: true,
-        creditScore: identity.creditScore,
+        creditScore: identity?.creditScore || 0,
         metadataURI: identity?.metadataURI || dbRes?.metadata_uri || "",
         metadata: {
           email: dbRes?.email || "unknown",
@@ -133,7 +135,7 @@ export function useArcID(address?: string) {
     })();
 
     return () => { mounted = false };
-  }, [address, contract]);
+  }, [address, contract, chainId]);
 
   return {
     state,

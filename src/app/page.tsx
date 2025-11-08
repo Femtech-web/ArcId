@@ -11,7 +11,6 @@ import { Onboarding } from "@/components/dashboard/onboarding";
 import { Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useArcID } from "@/hooks/useArcID";
-import { ConnectWithArcID } from "@/components/dashboard/connect-button";
 
 export default function Home() {
   const { address, isConnected } = useAccount();
@@ -23,6 +22,23 @@ export default function Home() {
     handleMint,
     handleRefresh,
   } = useArcID(address);
+
+  if (state === "loading") {
+    return (
+      <motion.div
+        key="loading"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="flex flex-col items-center justify-center min-h-[70vh] space-y-4 sm:space-y-6 text-center"
+      >
+        <Loader2 className="w-10 h-10 sm:w-12 sm:h-12 animate-spin text-primary" />
+        <p className="text-base sm:text-lg text-muted-foreground">
+          Loading your identity...
+        </p>
+      </motion.div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -62,21 +78,6 @@ export default function Home() {
           </motion.div>
         ) : (
           <AnimatePresence mode="wait">
-            {state === "loading" && (
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center min-h-[70vh] space-y-4 sm:space-y-6 text-center"
-              >
-                <Loader2 className="w-10 h-10 sm:w-12 sm:h-12 animate-spin text-primary" />
-                <p className="text-base sm:text-lg text-muted-foreground">
-                  Loading your identity...
-                </p>
-              </motion.div>
-            )}
-
             {state === "unverified" && !isMinting && (
               <motion.div
                 key="unverified"
@@ -150,8 +151,6 @@ export default function Home() {
                   />
                   <VerificationHistory address={address as string} />
                 </div>
-                <ConnectWithArcID />
-
                 <ConnectedDApps address={address as string} />
               </motion.div>
             )}
