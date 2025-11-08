@@ -6,7 +6,7 @@ import { ArcIDService } from "@/lib/arcidService";
 
 function requireApiKey(request: NextRequest): NextResponse | null {
   const header = request.headers.get("x-api-key");
-  if (!header || header !== process.env.API_KEY) {
+  if (!header || header.toString() !== process.env.API_KEY?.toString()) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   return null;
