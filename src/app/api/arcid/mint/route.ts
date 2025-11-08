@@ -4,19 +4,9 @@ import { uploadMetadataToStoracha } from "@/lib/storachaUploader";
 import { buildDataHash } from "@/lib/utils";
 import { ArcIDService } from "@/lib/arcidService";
 
-function requireApiKey(request: NextRequest): NextResponse | null {
-  const header = request.headers.get("x-api-key");
-  if (!header || header.toString() !== process.env.API_KEY?.toString()) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
-  return null;
-}
 
 export async function POST(request: NextRequest) {
   try {
-    const authError = requireApiKey(request);
-    if (authError) return authError;
-
     const { userAddress, userData, proof, salt } = await request.json();
 
     if (!userAddress || !userData || !proof) {

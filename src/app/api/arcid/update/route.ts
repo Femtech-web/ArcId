@@ -4,21 +4,9 @@ import { uploadMetadataToStoracha } from "@/lib/storachaUploader";
 import { buildDataHash } from "@/lib/utils";
 import { ArcIDService } from "@/lib/arcidService";
 
-function requireApiKey(req: NextRequest): NextResponse | null {
-  const header = req.headers.get("x-api-key");
-  if (!header || header !== process.env.API_KEY) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
-  return null;
-}
 
 export async function POST(req: NextRequest) {
   try {
-    // ✅ API key check
-    const unauthorized = requireApiKey(req);
-    if (unauthorized) return unauthorized;
-
-    // ✅ Body parsing
     const body = await req.json();
     const { userAddress, userData, payload, salt, reverify } = body;
 
@@ -31,7 +19,7 @@ export async function POST(req: NextRequest) {
     let kycResult: any = null;
     let creditScore = 0;
 
-    // ✅ Initialize ArcID service (same as Express app.locals)
+
     const svc = new ArcIDService(
       process.env.RPC_URL!,
       process.env.VERIFIER_PRIVATE_KEY!,
